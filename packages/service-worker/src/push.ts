@@ -66,7 +66,9 @@ export class SwPush {
       this.subscription = NEVER;
       return;
     }
-    this.messages = this.sw.eventsOfType('PUSH').pipe(map((message: any) => message.data));
+
+    this.messages = this.sw.eventsOfType<PushEvent>('PUSH').pipe(map(message => message.data));
+
     this.notificationClicks =
         this.sw.eventsOfType('NOTIFICATION_CLICK').pipe(map((message: any) => message.data));
 
