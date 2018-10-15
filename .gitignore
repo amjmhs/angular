@@ -1,6 +1,8 @@
 .DS_STORE
 
-/dist/
+# removed by intention
+# /dist/
+
 bazel-*
 e2e_test.*
 node_modules

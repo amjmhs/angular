@@ -1,0 +1,147 @@
+"use strict";
+/**
+ * @license
+ * Copyright Google Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+var common_1 = require("@angular/common");
+var core_1 = require("@angular/core");
+var testing_internal_1 = require("@angular/core/testing/src/testing_internal");
+var keyvalue_pipe_1 = require("../../src/pipes/keyvalue_pipe");
+testing_internal_1.describe('KeyValuePipe', function () {
+    testing_internal_1.it('should return null when given null', function () {
+        var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+        testing_internal_1.expect(pipe.transform(null)).toEqual(null);
+    });
+    testing_internal_1.it('should return null when given undefined', function () {
+        var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+        testing_internal_1.expect(pipe.transform(undefined)).toEqual(null);
+    });
+    testing_internal_1.it('should return null for an unsupported type', function () {
+        var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+        var fn = function () { };
+        testing_internal_1.expect(pipe.transform(fn)).toEqual(null);
+    });
+    testing_internal_1.describe('object dictionary', function () {
+        testing_internal_1.it('should transform a basic dictionary', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            testing_internal_1.expect(pipe.transform({ 1: 2 })).toEqual([{ key: '1', value: 2 }]);
+        });
+        testing_internal_1.it('should order by alpha', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            testing_internal_1.expect(pipe.transform({ 'b': 1, 'a': 1 })).toEqual([
+                { key: 'a', value: 1 }, { key: 'b', value: 1 }
+            ]);
+        });
+        testing_internal_1.it('should order by numerical', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            testing_internal_1.expect(pipe.transform({ 2: 1, 1: 1 })).toEqual([{ key: '1', value: 1 }, { key: '2', value: 1 }]);
+        });
+        testing_internal_1.it('should order by numerical and alpha', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            var input = { 2: 1, 1: 1, 'b': 1, 0: 1, 3: 1, 'a': 1 };
+            testing_internal_1.expect(pipe.transform(input)).toEqual([
+                { key: '0', value: 1 }, { key: '1', value: 1 }, { key: '2', value: 1 }, { key: '3', value: 1 },
+                { key: 'a', value: 1 }, { key: 'b', value: 1 }
+            ]);
+        });
+        testing_internal_1.it('should return the same ref if nothing changes', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            var transform1 = pipe.transform({ 1: 2 });
+            var transform2 = pipe.transform({ 1: 2 });
+            testing_internal_1.expect(transform1 === transform2).toEqual(true);
+        });
+        testing_internal_1.it('should return a new ref if something changes', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            var transform1 = pipe.transform({ 1: 2 });
+            var transform2 = pipe.transform({ 1: 3 });
+            testing_internal_1.expect(transform1 !== transform2).toEqual(true);
+        });
+    });
+    testing_internal_1.describe('Map', function () {
+        testing_internal_1.it('should transform a basic Map', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            testing_internal_1.expect(pipe.transform(new Map([[1, 2]]))).toEqual([{ key: 1, value: 2 }]);
+        });
+        testing_internal_1.it('should order by alpha', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            testing_internal_1.expect(pipe.transform(new Map([['b', 1], ['a', 1]]))).toEqual([
+                { key: 'a', value: 1 }, { key: 'b', value: 1 }
+            ]);
+        });
+        testing_internal_1.it('should order by numerical', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            testing_internal_1.expect(pipe.transform(new Map([[2, 1], [1, 1]]))).toEqual([
+                { key: 1, value: 1 }, { key: 2, value: 1 }
+            ]);
+        });
+        testing_internal_1.it('should order by numerical and alpha', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            var input = [[2, 1], [1, 1], ['b', 1], [0, 1], [3, 1], ['a', 1]];
+            testing_internal_1.expect(pipe.transform(new Map(input))).toEqual([
+                { key: 0, value: 1 }, { key: 1, value: 1 }, { key: 2, value: 1 }, { key: 3, value: 1 },
+                { key: 'a', value: 1 }, { key: 'b', value: 1 }
+            ]);
+        });
+        testing_internal_1.it('should order by complex types with compareFn', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            var input = new Map([[{ id: 1 }, 1], [{ id: 0 }, 1]]);
+            testing_internal_1.expect(pipe.transform(input, function (a, b) { return a.key.id > b.key.id ? 1 : -1; }))
+                .toEqual([
+                { key: { id: 0 }, value: 1 },
+                { key: { id: 1 }, value: 1 },
+            ]);
+        });
+        testing_internal_1.it('should return the same ref if nothing changes', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            var transform1 = pipe.transform(new Map([[1, 2]]));
+            var transform2 = pipe.transform(new Map([[1, 2]]));
+            testing_internal_1.expect(transform1 === transform2).toEqual(true);
+        });
+        testing_internal_1.it('should return a new ref if something changes', function () {
+            var pipe = new common_1.KeyValuePipe(core_1.ɵdefaultKeyValueDiffers);
+            var transform1 = pipe.transform(new Map([[1, 2]]));
+            var transform2 = pipe.transform(new Map([[1, 3]]));
+            testing_internal_1.expect(transform1 !== transform2).toEqual(true);
+        });
+    });
+});
+testing_internal_1.describe('defaultComparator', function () {
+    testing_internal_1.it('should remain the same order when keys are equal', function () {
+        var key = 1;
+        var values = [{ key: key, value: 2 }, { key: key, value: 1 }];
+        testing_internal_1.expect(values.sort(keyvalue_pipe_1.defaultComparator)).toEqual(values);
+    });
+    testing_internal_1.it('should sort undefined keys to the end', function () {
+        var values = [{ key: 3, value: 1 }, { key: undefined, value: 3 }, { key: 1, value: 2 }];
+        testing_internal_1.expect(values.sort(keyvalue_pipe_1.defaultComparator)).toEqual([
+            { key: 1, value: 2 }, { key: 3, value: 1 }, { key: undefined, value: 3 }
+        ]);
+    });
+    testing_internal_1.it('should sort null keys to the end', function () {
+        var values = [{ key: 3, value: 1 }, { key: null, value: 3 }, { key: 1, value: 2 }];
+        testing_internal_1.expect(values.sort(keyvalue_pipe_1.defaultComparator)).toEqual([
+            { key: 1, value: 2 }, { key: 3, value: 1 }, { key: null, value: 3 }
+        ]);
+    });
+    testing_internal_1.it('should sort strings in alpha ascending', function () {
+        var values = [{ key: 'b', value: 1 }, { key: 'a', value: 3 }];
+        testing_internal_1.expect(values.sort(keyvalue_pipe_1.defaultComparator)).toEqual([{ key: 'a', value: 3 }, { key: 'b', value: 1 }]);
+    });
+    testing_internal_1.it('should sort numbers in numerical ascending', function () {
+        var values = [{ key: 2, value: 1 }, { key: 1, value: 3 }];
+        testing_internal_1.expect(values.sort(keyvalue_pipe_1.defaultComparator)).toEqual([{ key: 1, value: 3 }, { key: 2, value: 1 }]);
+    });
+    testing_internal_1.it('should sort boolean in false (0) -> true (1)', function () {
+        var values = [{ key: true, value: 3 }, { key: false, value: 1 }];
+        testing_internal_1.expect(values.sort(keyvalue_pipe_1.defaultComparator)).toEqual([{ key: false, value: 1 }, { key: true, value: 3 }]);
+    });
+    testing_internal_1.it('should sort numbers as strings in numerical ascending', function () {
+        var values = [{ key: '2', value: 1 }, { key: 1, value: 3 }];
+        testing_internal_1.expect(values.sort(keyvalue_pipe_1.defaultComparator)).toEqual([{ key: 1, value: 3 }, { key: '2', value: 1 }]);
+    });
+});
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoia2V5dmFsdWVfcGlwZV9zcGVjLmpzIiwic291cmNlUm9vdCI6IiIsInNvdXJjZXMiOlsiLi4vLi4vLi4vLi4vLi4vLi4vcGFja2FnZXMvY29tbW9uL3Rlc3QvcGlwZXMva2V5dmFsdWVfcGlwZV9zcGVjLnRzIl0sIm5hbWVzIjpbXSwibWFwcGluZ3MiOiI7QUFBQTs7Ozs7O0dBTUc7O0FBRUgsMENBQTZDO0FBQzdDLHNDQUE2SDtBQUM3SCwrRUFBd0g7QUFJeEgsK0RBQWdFO0FBR2hFLDJCQUFRLENBQUMsY0FBYyxFQUFFO0lBQ3ZCLHFCQUFFLENBQUMsb0NBQW9DLEVBQUU7UUFDdkMsSUFBTSxJQUFJLEdBQUcsSUFBSSxxQkFBWSxDQUFDLDhCQUFzQixDQUFDLENBQUM7UUFDdEQseUJBQU0sQ0FBQyxJQUFJLENBQUMsU0FBUyxDQUFDLElBQUksQ0FBQyxDQUFDLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxDQUFDO0lBQzdDLENBQUMsQ0FBQyxDQUFDO0lBQ0gscUJBQUUsQ0FBQyx5Q0FBeUMsRUFBRTtRQUM1QyxJQUFNLElBQUksR0FBRyxJQUFJLHFCQUFZLENBQUMsOEJBQXNCLENBQUMsQ0FBQztRQUN0RCx5QkFBTSxDQUFDLElBQUksQ0FBQyxTQUFTLENBQUMsU0FBZ0IsQ0FBQyxDQUFDLENBQUMsT0FBTyxDQUFDLElBQUksQ0FBQyxDQUFDO0lBQ3pELENBQUMsQ0FBQyxDQUFDO0lBQ0gscUJBQUUsQ0FBQyw0Q0FBNEMsRUFBRTtRQUMvQyxJQUFNLElBQUksR0FBRyxJQUFJLHFCQUFZLENBQUMsOEJBQXNCLENBQUMsQ0FBQztRQUN0RCxJQUFNLEVBQUUsR0FBRyxjQUFPLENBQUMsQ0FBQztRQUNwQix5QkFBTSxDQUFDLElBQUksQ0FBQyxTQUFTLENBQUMsRUFBUyxDQUFDLENBQUMsQ0FBQyxPQUFPLENBQUMsSUFBSSxDQUFDLENBQUM7SUFDbEQsQ0FBQyxDQUFDLENBQUM7SUFDSCwyQkFBUSxDQUFDLG1CQUFtQixFQUFFO1FBQzVCLHFCQUFFLENBQUMscUNBQXFDLEVBQUU7WUFDeEMsSUFBTSxJQUFJLEdBQUcsSUFBSSxxQkFBWSxDQUFDLDhCQUFzQixDQUFDLENBQUM7WUFDdEQseUJBQU0sQ0FBQyxJQUFJLENBQUMsU0FBUyxDQUFDLEVBQUMsQ0FBQyxFQUFFLENBQUMsRUFBQyxDQUFDLENBQUMsQ0FBQyxPQUFPLENBQUMsQ0FBQyxFQUFDLEdBQUcsRUFBRSxHQUFHLEVBQUUsS0FBSyxFQUFFLENBQUMsRUFBQyxDQUFDLENBQUMsQ0FBQztRQUNqRSxDQUFDLENBQUMsQ0FBQztRQUNILHFCQUFFLENBQUMsdUJBQXVCLEVBQUU7WUFDMUIsSUFBTSxJQUFJLEdBQUcsSUFBSSxxQkFBWSxDQUFDLDhCQUFzQixDQUFDLENBQUM7WUFDdEQseUJBQU0sQ0FBQyxJQUFJLENBQUMsU0FBUyxDQUFDLEVBQUMsR0FBRyxFQUFFLENBQUMsRUFBRSxHQUFHLEVBQUUsQ0FBQyxFQUFDLENBQUMsQ0FBQyxDQUFDLE9BQU8sQ0FBQztnQkFDL0MsRUFBQyxHQUFHLEVBQUUsR0FBRyxFQUFFLEtBQUssRUFBRSxDQUFDLEVBQUMsRUFBRSxFQUFDLEdBQUcsRUFBRSxHQUFHLEVBQUUsS0FBSyxFQUFFLENBQUMsRUFBQzthQUMzQyxDQUFDLENBQUM7UUFDTCxDQUFDLENBQUMsQ0FBQztRQUNILHFCQUFFLENBQUMsMkJBQTJCLEVBQUU7WUFDOUIsSUFBTSxJQUFJLEdBQUcsSUFBSSxxQkFBWSxDQUFDLDhCQUFzQixDQUFDLENBQUM7WUFDdEQseUJBQU0sQ0FBQyxJQUFJLENBQUMsU0FBUyxDQUFDLEVBQUMsQ0FBQyxFQUFFLENBQUMsRUFBRSxDQUFDLEVBQUUsQ0FBQyxFQUFDLENBQUMsQ0FBQyxDQUFDLE9BQU8sQ0FBQyxDQUFDLEVBQUMsR0FBRyxFQUFFLEdBQUcsRUFBRSxLQUFLLEVBQUUsQ0FBQyxFQUFDLEVBQUUsRUFBQyxHQUFHLEVBQUUsR0FBRyxFQUFFLEtBQUssRUFBRSxDQUFDLEVBQUMsQ0FBQyxDQUFDLENBQUM7UUFDN0YsQ0FBQyxDQUFDLENBQUM7UUFDSCxxQkFBRSxD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

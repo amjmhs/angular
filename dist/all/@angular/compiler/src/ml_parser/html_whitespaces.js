@@ -1,0 +1,79 @@
+"use strict";
+/**
+ * @license
+ * Copyright Google Inc. All Rights Reserved.
+ *
+ * Use of this source code is governed by an MIT-style license that can be
+ * found in the LICENSE file at https://angular.io/license
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+var html = require("./ast");
+var parser_1 = require("./parser");
+var tags_1 = require("./tags");
+exports.PRESERVE_WS_ATTR_NAME = 'ngPreserveWhitespaces';
+var SKIP_WS_TRIM_TAGS = new Set(['pre', 'template', 'textarea', 'script', 'style']);
+// Equivalent to \s with \u00a0 (non-breaking space) excluded.
+// Based on https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp
+var WS_CHARS = ' \f\n\r\t\v\u1680\u180e\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff';
+var NO_WS_REGEXP = new RegExp("[^" + WS_CHARS + "]");
+var WS_REPLACE_REGEXP = new RegExp("[" + WS_CHARS + "]{2,}", 'g');
+function hasPreserveWhitespacesAttr(attrs) {
+    return attrs.some(function (attr) { return attr.name === exports.PRESERVE_WS_ATTR_NAME; });
+}
+/**
+ * Angular Dart introduced &ngsp; as a placeholder for non-removable space, see:
+ * https://github.com/dart-lang/angular/blob/0bb611387d29d65b5af7f9d2515ab571fd3fbee4/_tests/test/compiler/preserve_whitespace_test.dart#L25-L32
+ * In Angular Dart &ngsp; is converted to the 0xE500 PUA (Private Use Areas) unicode character
+ * and later on replaced by a space. We are re-implementing the same idea here.
+ */
+function replaceNgsp(value) {
+    // lexer is replacing the &ngsp; pseudo-entity with NGSP_UNICODE
+    return value.replace(new RegExp(tags_1.NGSP_UNICODE, 'g'), ' ');
+}
+exports.replaceNgsp = replaceNgsp;
+/**
+ * This visitor can walk HTML parse tree and remove / trim text nodes using the following rules:
+ * - consider spaces, tabs and new lines as whitespace characters;
+ * - drop text nodes consisting of whitespace characters only;
+ * - for all other text nodes replace consecutive whitespace characters with one space;
+ * - convert &ngsp; pseudo-entity to a single space;
+ *
+ * Removal and trimming of whitespaces have positive performance impact (less code to generate
+ * while compiling templates, faster view creation). At the same time it can be "destructive"
+ * in some cases (whitespaces can influence layout). Because of the potential of breaking layout
+ * this visitor is not activated by default in Angular 5 and people need to explicitly opt-in for
+ * whitespace removal. The default option for whitespace removal will be revisited in Angular 6
+ * and might be changed to "on" by default.
+ */
+var WhitespaceVisitor = /** @class */ (function () {
+    function WhitespaceVisitor() {
+    }
+    WhitespaceVisitor.prototype.visitElement = function (element, context) {
+        if (SKIP_WS_TRIM_TAGS.has(element.name) || hasPreserveWhitespacesAttr(element.attrs)) {
+            // don't descent into elements where we need to preserve whitespaces
+            // but still visit all attributes to eliminate one used as a market to preserve WS
+            return new html.Element(element.name, html.visitAll(this, element.attrs), element.children, element.sourceSpan, element.startSourceSpan, element.endSourceSpan);
+        }
+        return new html.Element(element.name, element.attrs, html.visitAll(this, element.children), element.sourceSpan, element.startSourceSpan, element.endSourceSpan);
+    };
+    WhitespaceVisitor.prototype.visitAttribute = function (attribute, context) {
+        return attribute.name !== exports.PRESERVE_WS_ATTR_NAME ? attribute : null;
+    };
+    WhitespaceVisitor.prototype.visitText = function (text, context) {
+        var isNotBlank = text.value.match(NO_WS_REGEXP);
+        if (isNotBlank) {
+            return new html.Text(replaceNgsp(text.value).replace(WS_REPLACE_REGEXP, ' '), text.sourceSpan);
+        }
+        return null;
+    };
+    WhitespaceVisitor.prototype.visitComment = function (comment, context) { return comment; };
+    WhitespaceVisitor.prototype.visitExpansion = function (expansion, context) { return expansion; };
+    WhitespaceVisitor.prototype.visitExpansionCase = function (expansionCase, context) { return expansionCase; };
+    return WhitespaceVisitor;
+}());
+exports.WhitespaceVisitor = WhitespaceVisitor;
+function removeWhitespaces(htmlAstWithErrors) {
+    return new parser_1.ParseTreeResult(html.visitAll(new WhitespaceVisitor(), htmlAstWithErrors.rootNodes), htmlAstWithErrors.errors);
+}
+exports.removeWhitespaces = removeWhitespaces;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiaHRtbF93aGl0ZXNwYWNlcy5qcyIsInNvdXJjZVJvb3QiOiIiLCJzb3VyY2VzIjpbIi4uLy4uLy4uLy4uLy4uLy4uL3BhY2thZ2VzL2NvbXBpbGVyL3NyYy9tbF9wYXJzZXIvaHRtbF93aGl0ZXNwYWNlcy50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiO0FBQUE7Ozs7OztHQU1HOztBQUVILDRCQUE4QjtBQUM5QixtQ0FBeUM7QUFDekMsK0JBQW9DO0FBRXZCLFFBQUEscUJBQXFCLEdBQUcsdUJBQXVCLENBQUM7QUFFN0QsSUFBTSxpQkFBaUIsR0FBRyxJQUFJLEdBQUcsQ0FBQyxDQUFDLEtBQUssRUFBRSxVQUFVLEVBQUUsVUFBVSxFQUFFLFFBQVEsRUFBRSxPQUFPLENBQUMsQ0FBQyxDQUFDO0FBRXRGLDhEQUE4RDtBQUM5RCxtR0FBbUc7QUFDbkcsSUFBTSxRQUFRLEdBQUcsMEVBQTBFLENBQUM7QUFDNUYsSUFBTSxZQUFZLEdBQUcsSUFBSSxNQUFNLENBQUMsT0FBSyxRQUFRLE1BQUcsQ0FBQyxDQUFDO0FBQ2xELElBQU0saUJBQWlCLEdBQUcsSUFBSSxNQUFNLENBQUMsTUFBSSxRQUFRLFVBQU8sRUFBRSxHQUFHLENBQUMsQ0FBQztBQUUvRCxvQ0FBb0MsS0FBdUI7SUFDekQsT0FBTyxLQUFLLENBQUMsSUFBSSxDQUFDLFVBQUMsSUFBb0IsSUFBSyxPQUFBLElBQUksQ0FBQyxJQUFJLEtBQUssNkJBQXFCLEVBQW5DLENBQW1DLENBQUMsQ0FBQztBQUNuRixDQUFDO0FBRUQ7Ozs7O0dBS0c7QUFDSCxxQkFBNEIsS0FBYTtJQUN2QyxnRUFBZ0U7SUFDaEUsT0FBTyxLQUFLLENBQUMsT0FBTyxDQUFDLElBQUksTUFBTSxDQUFDLG1CQUFZLEVBQUUsR0FBRyxDQUFDLEVBQUUsR0FBRyxDQUFDLENBQUM7QUFDM0QsQ0FBQztBQUhELGtDQUdDO0FBRUQ7Ozs7Ozs7Ozs7Ozs7R0FhRztBQUNIO0lBQUE7SUFtQ0EsQ0FBQztJQWxDQyx3Q0FBWSxHQUFaLFVBQWEsT0FBcUIsRUFBRSxPQUFZO1FBQzlDLElBQUksaUJBQWlCLENBQUMsR0FBRyxDQUFDLE9BQU8sQ0FBQyxJQUFJLENBQUMsSUFBSSwwQkFBMEIsQ0FBQyxPQUFPLENBQUMsS0FBSyxDQUFDLEVBQUU7WUFDcEYsb0VBQW9FO1lBQ3BFLGtGQUFrRjtZQUNsRixPQUFPLElBQUksSUFBSSxDQUFDLE9BQU8sQ0FDbkIsT0FBTyxDQUFDLElBQUksRUFBRSxJQUFJLENBQUMsUUFBUSxDQUFDLElBQUksRUFBRSxPQUFPLENBQUMsS0FBSyxDQUFDLEVBQUUsT0FBTyxDQUFDLFFBQVEsRUFBRSxPQUFPLENBQUMsVUFBVSxFQUN0RixPQUFPLENBQUMsZUFBZSxFQUFFLE9BQU8sQ0FBQyxhQUFhLENBQUMsQ0FBQztTQUNyRDtRQUVELE9BQU8sSUFBSSxJQUFJLENBQUMsT0FBTyxDQUNuQixPQUFPLENBQUMsSUFBSSxFQUFFLE9BQU8sQ0FBQyxLQUFLLEVBQUUsSUFBSSxDQUFDLFFBQVEsQ0FBQyxJQUFJLEVBQUUsT0FBTyxDQUFDLFFBQVEsQ0FBQyxFQUFFLE9BQU8sQ0FBQyxVQUFVLEVBQ3RGLE9BQU8sQ0FBQyxlQUFlLEVBQUUsT0FBTyxDQUFDLGFBQWEsQ0FBQyxDQUFDO0lBQ3RELENBQUM7SUFFRCwwQ0FBYyxHQUFkLFVBQWUsU0FBeUIsRUFBRSxPQUFZO1FBQ3BELE9BQU8sU0FBUyxDQUFDLElBQUksS0FBSyw2QkFBcUIsQ0FBQyxDQUFDLENBQUMsU0FBUyxDQUFDLENBQUMsQ0FBQyxJQUFJLENBQUM7SUFDckUsQ0FBQztJQUVELHFDQUFTLEdBQVQsVUFBVSxJQUFlLEVBQUUsT0FBWTtRQUNyQyxJQUFNLFVBQVUsR0FBRyxJQUFJLENBQUMsS0FBSyxDQUFDLEtBQUssQ0FBQyxZQUFZLENBQUMsQ0FBQztRQUVsRCxJQUFJLFVBQVUsRUFBRTtZQUNkLE9BQU8sSUFBSSxJQUFJLENBQUMsSUFBSSxDQUNoQixXQUFXLENBQUMsSUFBSSxDQUFDLEtBQUssQ0FBQyxDQUFDLE9BQU8sQ0FBQyxpQkFBaUIsRUFBRSxHQUFHLENBQUMsRUFBRSxJQUFJLENBQUMsVUFBVSxDQUFDLENBQUM7U0FDL0U7UUFFRCxPQUFPLElBQUksQ0FBQztJQUNkLENBQUM7SUFFRCx3Q0FBWSxHQUFaLFVBQWEsT0FBcUIsRUFBRSxPQUFZLElBQVMsT0FBTyxPQUFPLENBQUMsQ0FBQyxDQUFDO0lBRTFFLDBDQUFjLEdBQWQsVUFBZSxTQUF5QixFQUFFLE9BQVksSUFBUyxPQUFPLFNBQVMsQ0FBQyxDQUFDLENBQUM7SUFFbEYsOENBQWtCLEdBQWxCLFVBQW1CLGFBQWlDLEVBQUUsT0FBWSxJQUFTLE9BQU8sYUFBYSxDQUFDLENBQUMsQ0FBQztJQUNwRyx3QkFBQztBQUFELENBQUMsQUFuQ0QsSUFtQ0M7QUFuQ1ksOENBQWlCO0FBcUM5QiwyQkFBa0MsaUJBQWtDO0lBQ2xFLE9BQU8sSUFBSSx3QkFBZSxDQUN0QixJQUFJLENBQUMsUUFBUSxDQUFDLElBQUksaUJBQWlCLEVBQUUsRUFBRSxpQkFBaUIsQ0FBQyxTQUFTLENBQUMsRUFDbkUsaUJBQWlCLENBQUMsTUFBTSxDQUFDLENBQUM7QUFDaEMsQ0FBQztBQUpELDhDQUlDIn0=
