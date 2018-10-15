@@ -303,7 +303,7 @@ export class Driver implements Debuggable, UpdateSource {
     NOTIFICATION_OPTION_NAMES.filter(name => name in notification)
         .forEach(name => options[name] = notification[name]);
 
-    await this.broadcast({
+    await this.broadcastAndFocus({
       type: 'NOTIFICATION_CLICK',
       data: {action, notification: options},
     });
@@ -983,6 +983,17 @@ export class Driver implements Debuggable, UpdateSource {
   async broadcast(msg: Object): Promise<void> {
     const clients = await this.scope.clients.matchAll();
     clients.forEach(client => { client.postMessage(msg); });
+  }
+
+  async broadcastAndFocus(msg: Object): Promise<void> {
+    const clients = await this.scope.clients.matchAll();
+    clients.forEach((client: any) => {
+      if ('focus' in client && !client.focused) {
+        client.focus();
+      }
+
+      client.postMessage(msg);
+    });
   }
 
   async debugState(): Promise<DebugState> {
